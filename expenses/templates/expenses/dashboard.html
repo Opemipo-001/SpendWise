@@ -1,0 +1,197 @@
+{% extends 'expenses/base.html' %}
+
+{% block content %}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h2 class="fw-bold">Dashboard</h2>
+        <p class="text-muted">Track your income, expenses, and spending habits.</p>
+    </div>
+
+    <a href="{% url 'add_transaction' %}" class="btn btn-success">
+        + Add Transaction
+    </a>
+</div>
+
+{% if budget_alert %}
+<div class="alert alert-danger shadow-sm">
+    {{ budget_alert }}
+</div>
+{% endif %}
+
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card border-0 shadow-sm">
+            <div class="card-body">
+                <p class="text-muted mb-1">Total Income</p>
+                <h3 class="text-success">₦{{ total_income }}</h3>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-3">
+        <div class="card border-0 shadow-sm">
+            <div class="card-body">
+                <p class="text-muted mb-1">Total Expense</p>
+                <h3 class="text-danger">₦{{ total_expense }}</h3>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-3">
+        <div class="card border-0 shadow-sm">
+            <div class="card-body">
+                <p class="text-muted mb-1">Balance</p>
+                <h3 class="text-dark">₦{{ balance }}</h3>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-3">
+        <div class="card border-0 shadow-sm">
+            <div class="card-body">
+                <p class="text-muted mb-1">Savings Estimate</p>
+                <h3 class="text-primary">₦{{ total_savings }}</h3>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col-md-6">
+        <div class="card border-0 shadow-sm">
+            <div class="card-body">
+                <h5>Expenses by Category</h5>
+                <canvas id="categoryChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-6">
+        <div class="card border-0 shadow-sm">
+            <div class="card-body">
+                <h5>Monthly Income vs Expenses</h5>
+                <canvas id="monthlyChart"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col-md-6">
+        <div class="card border-0 shadow-sm">
+            <div class="card-body">
+                <h5>Monthly Analytics</h5>
+
+                {% if highest_category %}
+                    <p>
+                        Highest spending category:
+                        <strong>{{ highest_category.category__name }}</strong>
+                    </p>
+
+                    <p>
+                        Amount spent:
+                        <strong>₦{{ highest_category.total }}</strong>
+                    </p>
+                {% else %}
+                    <p class="text-muted">No expense data yet.</p>
+                {% endif %}
+
+                <p>
+                    Estimated savings:
+                    <strong>₦{{ total_savings }}</strong>
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card border-0 shadow-sm">
+    <div class="card-body">
+        <h4 class="mb-3">Recent Transactions</h4>
+
+        <table class="table table-hover align-middle">
+            <thead class="table-dark">
+                <tr>
+                    <th>Date</th>
+                    <th>Type</th>
+                    <th>Category</th>
+                    <th>Amount</th>
+                    <th>Description</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+
+            <tbody>
+                {% for transaction in recent_transactions %}
+                <tr>
+                    <td>{{ transaction.date }}</td>
+                    <td>
+                        {% if transaction.transaction_type == 'income' %}
+                            <span class="badge bg-success">Income</span>
+                        {% else %}
+                            <span class="badge bg-danger">Expense</span>
+                        {% endif %}
+                    </td>
+                    <td>{{ transaction.category.name }}</td>
+                    <td>₦{{ transaction.amount }}</td>
+                    <td>{{ transaction.description }}</td>
+                    <td>
+                        <a href="{% url 'edit_transaction' transaction.id %}" class="btn btn-sm btn-warning">
+                            Edit
+                        </a>
+
+                        <a href="{% url 'delete_transaction' transaction.id %}" class="btn btn-sm btn-danger">
+                            Delete
+                        </a>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="6" class="text-center text-muted">
+                        No transactions yet.
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<script>
+    const categoryLabels = {{ category_labels|safe }};
+    const categoryTotals = {{ category_totals|safe }};
+
+    const monthlyLabels = {{ monthly_labels|safe }};
+    const monthlyIncome = {{ monthly_income|safe }};
+    const monthlyExpense = {{ monthly_expense|safe }};
+
+    new Chart(document.getElementById('categoryChart'), {
+        type: 'pie',
+        data: {
+            labels: categoryLabels,
+            datasets: [{
+                data: categoryTotals
+            }]
+        }
+    });
+
+    new Chart(document.getElementById('monthlyChart'), {
+        type: 'bar',
+        data: {
+            labels: monthlyLabels,
+            datasets: [
+                {
+                    label: 'Income',
+                    data: monthlyIncome
+                },
+                {
+                    label: 'Expenses',
+                    data: monthlyExpense
+                }
+            ]
+        }
+    });
+</script>
+
+{% endblock %}
